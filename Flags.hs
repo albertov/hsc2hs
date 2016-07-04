@@ -15,6 +15,7 @@ data ConfigM m = Config {
                      cmTemplate :: m FilePath,
                      cmCompiler :: m FilePath,
                      cmLinker   :: m FilePath,
+                     cmEmulator :: Maybe FilePath,
                      cKeepFiles :: Bool,
                      cNoCompile :: Bool,
                      cCrossCompile :: Bool,
@@ -37,6 +38,7 @@ emptyMode = UseConfig $ Config {
                             cmTemplate    = Nothing,
                             cmCompiler    = Nothing,
                             cmLinker      = Nothing,
+                            cmEmulator    = Nothing,
                             cKeepFiles    = False,
                             cNoCompile    = False,
                             cCrossCompile = False,
@@ -63,6 +65,8 @@ options = [
         "C compiler to use",
     Option ['l'] ["ld"]         (ReqArg (withConfig . setLinker)     "PROG")
         "linker to use",
+    Option ['e'] ["emulator"]   (ReqArg (withConfig . setEmulator)   "PROG")
+        "Emulator to run tests on (implies cross-compile = False)",
     Option ['C'] ["cflag"]      (ReqArg (addFlag . CompFlag)   "FLAG")
         "flag to pass to the C compiler",
     Option ['I'] []             (ReqArg (addFlag . CompFlag . ("-I"++)) "DIR")
@@ -110,6 +114,9 @@ setCompiler fp c = c { cmCompiler = Just fp }
 
 setLinker :: FilePath -> ConfigM Maybe -> ConfigM Maybe
 setLinker fp c = c { cmLinker = Just fp }
+
+setEmulator :: FilePath -> ConfigM Maybe -> ConfigM Maybe
+setEmulator fp c = c { cmEmulator = Just fp }
 
 setKeepFiles :: Bool -> ConfigM Maybe -> ConfigM Maybe
 setKeepFiles b c = c { cKeepFiles = b }

@@ -94,6 +94,7 @@ processFiles configM files usage = do
                      cmTemplate    = Id template,
                      cmCompiler    = Id compiler,
                      cmLinker      = Id linker,
+                     cmEmulator    = cmEmulator configM,
                      cKeepFiles    = cKeepFiles configM,
                      cNoCompile    = cNoCompile configM,
                      cCrossCompile = cCrossCompile configM,
@@ -102,7 +103,9 @@ processFiles configM files usage = do
                      cFlags        = cFlags configM ++ extraFlags
                  }
 
-    let outputter = if cCrossCompile config then outputCross else outputDirect
+    let outputter = case (cCrossCompile config, cmEmulator config) of
+                      (True,Nothing) -> outputCross
+                      _              -> outputDirect
 
     forM_ files (\name -> do
         (outName, outDir, outBase) <- case [f | Output f <- cFlags config] of

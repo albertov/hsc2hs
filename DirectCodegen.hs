@@ -21,7 +21,6 @@ outputDirect :: Config -> FilePath -> FilePath -> FilePath -> String -> [Token] 
 outputDirect config outName outDir outBase name toks = do
 
     let beVerbose    = cVerbose config
-        doCross      = cCrossCompile config
         flags        = cFlags config
         cProgName    = outDir++outBase++"_hsc_make.c"
         oProgName    = outDir++outBase++"_hsc_make.o"
@@ -85,8 +84,13 @@ outputDirect config outName outDir outBase name toks = do
         )
       possiblyRemove oProgName $ do
 
-        runTestProgram ("running " ++ execProgName) beVerbose doCross
-          execProgName [] outName
+        case cmEmulator config of
+          Just emu -> rawSystemWithStdOutL
+                      ("running " ++ execProgName ++ " with " ++ emu)
+                      beVerbose emu [execProgName] outName
+          Nothing -> rawSystemWithStdOutL
+                      ("running " ++ execProgName)
+                      beVerbose execProgName [] outName
         possiblyRemove progName $ do
 
           when needsH $ writeBinaryFile outHName $
@@ -106,26 +110,3 @@ outputDirect config outName outDir outBase name toks = do
             concatMap outTokenC specials
             -- NB. outHFile not outHName; works better when processed
             -- by gcc or mkdependC.
-
-linuxBuild :: Bool
-linuxBuild =
-#if defined(linux_BUILD_OS)
-  True
-#else
-  False
-#endif
-
-windowsHost :: Bool
-windowsHost =
-#if defined(mingw32_HOST_OS) || defined(__CYGWIN32__)
-  True
-#else
-  False
-#endif
-
-
-runTestProgram msg verbose doCross execProgName args outName
-  | not doCross, linuxBuild, windowsHost =
-      rawSystemWithStdOutL msg verbose "wine" (execProgName:args) outName
-  | otherwise =
-    rawSystemWithStdOutL msg verbose execProgName args outName
